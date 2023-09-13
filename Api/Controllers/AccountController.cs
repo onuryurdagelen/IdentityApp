@@ -22,8 +22,8 @@ namespace Api.Controllers
         private readonly SignInManager<User> _signInManager;
         private readonly UserManager<User> _userManager;
 
-        public AccountController(JWTService jwtService, 
-            SignInManager<User> signInManager, 
+        public AccountController(JWTService jwtService,
+            SignInManager<User> signInManager,
             UserManager<User> userManager)
         {
             _jwtService = jwtService;
@@ -41,7 +41,7 @@ namespace Api.Controllers
 
         [HttpPost("login")]
         [ServiceFilter(typeof(ValidationErrorResponseAttribute))]
-        public async Task<ActionResult<UserDto>> Login([FromBody]LoginDto model)
+        public async Task<ActionResult<UserDto>> Login([FromBody] LoginDto model)
         {
             var user = await _userManager.FindByNameAsync(model.UserName);
             //if (user == null) return Unauthorized("Invalid username or password");
@@ -61,7 +61,7 @@ namespace Api.Controllers
         {
             if (await CheckEmailExistsAsync(model.EmailAddress))
             {
-                 throw new AuthenticationErrorException($"An existing account is using {model.EmailAddress}, email addres. Please try with another email address");
+                throw new AuthenticationErrorException($"An existing account is using {model.EmailAddress}, email addres. Please try with another email address");
             }
 
             var userToAdd = new User
@@ -75,13 +75,13 @@ namespace Api.Controllers
 
             // creates a user inside our AspNetUsers table inside our database
             var result = await _userManager.CreateAsync(userToAdd, model.Password);
-            if (!result.Succeeded) 
+            if (!result.Succeeded)
                 return new ObjectResult(new
                 {
                     Errors = result.Errors
                 });
 
-            return Ok("Your account has been created, you can login");
+            return Ok(new JsonResult(new { title = "Account Created.", message = "Your account has ben created,you can login." }));
         }
 
         #region Private Helper Methods
@@ -89,8 +89,8 @@ namespace Api.Controllers
         {
             return new UserDto
             {
-                FirstName= user.FirstName,
-                LastName= user.LastName,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
                 JWT = _jwtService.CreateJWT(user),
             };
         }
