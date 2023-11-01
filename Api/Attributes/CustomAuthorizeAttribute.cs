@@ -1,4 +1,4 @@
-﻿using Api.Models;
+﻿using IdentityApp.Data.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;

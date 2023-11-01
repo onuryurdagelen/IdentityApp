@@ -1,8 +1,8 @@
 using Api.Attributes;
-using Api.Data;
 using Api.Extensions;
-using Api.Models;
 using Api.Services;
+using IdentityApp.Data;
+using IdentityApp.Data.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using System;
 using System.Linq;
 using System.Text;
 
@@ -25,9 +26,26 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<Context>(options =>
+builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+
+    switch (builder.Configuration.GetValue<string>("DbProvider"))
+    {
+        case "Npgsql":
+            options.UseNpgsql(builder.Configuration.GetConnectionString("Npgsql"), config =>
+            {
+                config.MigrationsAssembly("PostgreSql");
+            });
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            break;
+        case "SqlServer":
+        default:
+            options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer"), config =>
+            {
+                config.MigrationsAssembly("SqlServer");
+            });
+            break;
+    }
 });
 builder.Services.AddScoped<ValidationErrorResponseAttribute>();
 //builder.Services.AddScoped<CustomExceptionFilterAttribute>();
@@ -68,7 +86,7 @@ builder.Services.AddIdentityCore<User>(options =>
 })
     .AddRoles<IdentityRole>() // be able to add roles
     .AddRoleManager<RoleManager<IdentityRole>>() // be able to make use of RoleManager
-    .AddEntityFrameworkStores<Context>() // providing our context
+    .AddEntityFrameworkStores<AppDbContext>() // providing our context
     .AddSignInManager<SignInManager<User>>() // make use of Signin manager
     .AddUserManager<UserManager<User>>() // make use of UserManager to create users
     .AddDefaultTokenProviders(); // be able to create tokens for email confirmation

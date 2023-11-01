@@ -2,7 +2,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Api.Models
+namespace IdentityApp.Data.Models
 {
     public class User : IdentityUser
     {
