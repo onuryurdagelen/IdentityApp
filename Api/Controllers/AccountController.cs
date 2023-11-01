@@ -1,8 +1,8 @@
 ﻿using Api.Attributes;
 using Api.DTOs.Account;
 using Api.Exceptions;
-using Api.Models;
 using Api.Services;
+using IdentityApp.Data.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -45,7 +45,7 @@ namespace Api.Controllers
         {
             var user = await _userManager.FindByNameAsync(model.UserName);
             //if (user == null) return Unauthorized("Invalid username or password");
-            if (user == null) throw new AuthenticationErrorException("Invalid username or password");
+            if (user == null) throw new AuthenticationErrorException("User Not Found!");
 
             if (user.EmailConfirmed == false) throw new AuthenticationErrorException("Please confirm your email address.");
 
@@ -81,7 +81,7 @@ namespace Api.Controllers
                     Errors = result.Errors
                 });
 
-            return Ok(new JsonResult(new { title = "Account Created.", message = "Your account has ben created,you can login." }));
+            return Ok(new { title = "Account Created.", message = "Your account has ben created,you can login." });
         }
 
         #region Private Helper Methods

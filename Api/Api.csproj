@@ -8,20 +8,31 @@
 
 	<ItemGroup>
 		<!--to authenticate user using JWT Bearer-->
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.4" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.5" />
 		<!--to be able to derive from IdentityDbContext inside our context.cs-->
-		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.4" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.5" />
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.3" />
 		<!--to be able to communicate with SQL server via EF-->
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.4" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.5" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.4" />
 		<!--to be able to add/remove migration to our SQL server-->
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.4">
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.5">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
 		<!--to be able to create, serialize and validate JSON web tokens-->
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.27.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\IdentityApp.Data\IdentityApp.Data.csproj" />
+	  <ProjectReference Include="..\Migrations\PostgreSql\PostgreSql.csproj" />
+	  <ProjectReference Include="..\Migrations\SqlServer\SqlServer.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Data\" />
 	</ItemGroup>
 
 </Project>

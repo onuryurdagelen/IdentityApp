@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace Api.Models
+namespace IdentityApp.Data.Models
 {
     public class ErrorResponse
     {
