@@ -116,9 +116,9 @@ namespace Api.Controllers
         {
             var user = await _userManager.FindByEmailAsync(model.EmailAddress);
 
-            if (user == null) return Unauthorized("This email address has not been registered yet.");
+            if (user == null) return Unauthorized(new { message = "This email address has not been registered yet.",confirmed = false });
 
-            if (user.EmailConfirmed) return BadRequest("Your email was confirmed before.Please login to your account");
+            if (user.EmailConfirmed) return BadRequest(new { message = "Your email was confirmed before.Please login to your account",confirmed = true });
 
             try
             {
@@ -131,11 +131,11 @@ namespace Api.Controllers
                 {
                     return Ok(new { title = "Email Confirmed", message = "Your email address is confirmed.You can login now." });
                 }
-                return BadRequest("Invalid token.Please try again");
+                return BadRequest(new {message = "Invalid token.Please try again" ,confirmed = false});
             }
             catch (Exception)
             {
-                return BadRequest("Invalid token.Please try again");
+                return BadRequest(new { message = "Invalid token.Please try again", confirmed = false });
             }
         }
         [HttpPut("reset-password")]
@@ -242,7 +242,7 @@ namespace Api.Controllers
         {
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             token = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-            var url = $"{_config["JWT:ClientUrl"]}/{_config["Email:ConfirmEmailPath"]}?token={token}&email={user.Email}";
+            var url = $"{_config["JWT:ClientUrl"]}/{_config["Email:ConfirmEmailPath"]}?token={token}&emailAddress={user.Email}";
 
             var body = $"<p>Hello: {user.FirstName} {user.LastName}</p>" +
                 "<p>Please confirm your email address by clicking on the following link.</p>" +
@@ -257,7 +257,7 @@ namespace Api.Controllers
         {
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             token = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-            var url = $"{_config["JWT:ClientUrl"]}/{_config["Email:ResetPasswordPath"]}?token={token}&email={user.Email}";
+            var url = $"{_config["JWT:ClientUrl"]}/{_config["Email:ResetPasswordPath"]}?token={token}&emailAddress={user.Email}";
 
             var body = $"<p>Hello: {user.FirstName} {user.LastName}</p>" +
                 $"<p>Username: {user.UserName}</p>"+
