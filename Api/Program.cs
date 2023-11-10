@@ -71,6 +71,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 // be able to inject JWTService class inside our Controllers
 builder.Services.AddScoped<JWTService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<ContextSeedService>();
 
 // defining our IdentityCore Service
 builder.Services.AddIdentityCore<User>(options =>
@@ -137,5 +138,20 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+#region ContextSeed
+using var scope = app.Services.CreateScope();
+try
+{
+    var contextSeedService = scope.ServiceProvider.GetService<ContextSeedService>();
+    await contextSeedService.InitializeContextAsync();
+}
+catch (Exception ex)
+{
+    var logger = scope.ServiceProvider.GetService<ILogger<Program>>();
+    logger.LogError(ex.Message, "Failed to initialize and seed the database");
+    throw;
+}
+#endregion
 
 app.Run();
