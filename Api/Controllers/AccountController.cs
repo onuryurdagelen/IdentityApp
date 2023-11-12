@@ -22,7 +22,7 @@ namespace Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AccountController : ControllerBase
+    public class AccountController : IdentityController
     {
         private readonly JWTService _jwtService;
         private readonly IConfiguration _config;
@@ -50,7 +50,7 @@ namespace Api.Controllers
         public async Task<ActionResult<UserDto>> RefreshUserToken()
         {
             var user = await _userManager.FindByNameAsync(User.FindFirst(ClaimTypes.Email)?.Value);
-            return CreateApplicationUserDto(user);
+            return await CreateApplicationUserDto(user);
         }
 
         [HttpPost("login")]
@@ -66,7 +66,7 @@ namespace Api.Controllers
             var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
             if (!result.Succeeded) throw new AuthenticationErrorException("Invalid username or password");
 
-            return CreateApplicationUserDto(user);
+            return await CreateApplicationUserDto(user);
         }
 
         [HttpPost("register")]
@@ -223,13 +223,13 @@ namespace Api.Controllers
         }
 
         #region Private Helper Methods
-        private UserDto CreateApplicationUserDto(User.User user)
+        private async Task<UserDto> CreateApplicationUserDto(User.User user)
         {
             return new UserDto
             {
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                JWT = _jwtService.CreateJWT(user),
+                JWT = await _jwtService.CreateJWTAsync(user),
             };
         }
 

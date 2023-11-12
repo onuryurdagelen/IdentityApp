@@ -44,8 +44,8 @@ namespace Api.Services
                 //admin kullanıcısı
                 var admin = new User
                 {
-                    FirstName = "admin",
-                    LastName = "jackson",
+                    FirstName = "Admin",
+                    LastName = "Jackson",
                     UserName = "admin@example.com",
                     EmailConfirmed = true,
                     Email = "admin@example.com"
@@ -55,15 +55,15 @@ namespace Api.Services
                 await userManager.AddClaimsAsync(admin, new Claim[]
                 {
                     new Claim(ClaimTypes.Email,admin.Email),
-                    new Claim(ClaimTypes.Surname,admin.LastName),
                     new Claim(ClaimTypes.GivenName,admin.FirstName),
+                    new Claim(ClaimTypes.Surname,admin.LastName),
                 });
 
                 //manager kullanıcısı
                 var manager = new User
                 {
-                    FirstName = "manager",
-                    LastName = "jackson",
+                    FirstName = "Manager",
+                    LastName = "Paulson",
                     UserName = "manager@example.com",
                     EmailConfirmed = true,
                     Email = "manager@example.com"
@@ -73,15 +73,33 @@ namespace Api.Services
                 await userManager.AddClaimsAsync(manager, new Claim[]
                 {
                     new Claim(ClaimTypes.Email,manager.Email),
-                    new Claim(ClaimTypes.Surname,manager.LastName),
                     new Claim(ClaimTypes.GivenName,manager.FirstName),
+                    new Claim(ClaimTypes.Surname,manager.LastName),
+                });
+
+                //vip player kullanıcısı
+                var vip_player = new User
+                {
+                    FirstName = "vip_player",
+                    LastName = "tomsson",
+                    UserName = "vip_player@example.com",
+                    Email = "vip_player@example.com",
+                    EmailConfirmed = true
+                };
+                await userManager.CreateAsync(vip_player, "Pa$$w0rd");
+                await userManager.AddToRolesAsync(vip_player, new[] { SD.PlayerRole });
+                await userManager.AddClaimsAsync(vip_player, new Claim[]
+                {
+                    new Claim(ClaimTypes.Email,manager.Email),
+                    new Claim(ClaimTypes.GivenName,manager.FirstName),
+                    new Claim(ClaimTypes.Surname,manager.LastName),
                 });
 
                 //player kullanıcısı
                 var player = new User
                 {
-                    FirstName = "player",
-                    LastName = "player",
+                    FirstName = "Player",
+                    LastName = "Player",
                     UserName = "player@example.com",
                     EmailConfirmed = true,
                     Email = "player@example.com"
@@ -91,8 +109,8 @@ namespace Api.Services
                 await userManager.AddClaimsAsync(player, new Claim[]
                 {
                     new Claim(ClaimTypes.Email,player.Email),
-                    new Claim(ClaimTypes.Surname,player.LastName),
                     new Claim(ClaimTypes.GivenName,player.FirstName),
+                    new Claim(ClaimTypes.Surname,player.LastName),
                 });
             }
         }

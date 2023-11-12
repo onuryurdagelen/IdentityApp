@@ -1,11 +1,14 @@
 ﻿using IdentityApp.Data.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Api.Services
 {
@@ -13,15 +16,17 @@ namespace Api.Services
     {
         private readonly IConfiguration _config;
         private readonly SymmetricSecurityKey _jwtKey;
+        private readonly UserManager<User> _userManager;
 
-        public JWTService(IConfiguration config)
+        public JWTService(IConfiguration config, UserManager<User> userManager)
         {
             _config = config;
 
             // jwtKey is used for both encripting and decripting the JWT token
             _jwtKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JWT:Key"]));
+            _userManager = userManager;
         }
-        public string CreateJWT(User user)
+        public async Task<string> CreateJWTAsync(User user)
         {
             var userClaims = new List<Claim>
             {
@@ -30,6 +35,9 @@ namespace Api.Services
                 new Claim(ClaimTypes.GivenName, user.FirstName),
                 new Claim(ClaimTypes.Surname, user.LastName)
             };
+            var roles = await _userManager.GetRolesAsync(user);
+            userClaims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
 
             var creadentials = new SigningCredentials(_jwtKey, SecurityAlgorithms.HmacSha512Signature);
             var tokenDescriptor = new SecurityTokenDescriptor
