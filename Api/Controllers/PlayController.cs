@@ -7,7 +7,7 @@ namespace Api.Controllers
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class PlayController : ControllerBase
+    public class PlayController : IdentityController
     {
         [HttpGet("get-players")]
         public IActionResult Players()

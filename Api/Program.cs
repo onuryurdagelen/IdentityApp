@@ -1,3 +1,4 @@
+using Api;
 using Api.Attributes;
 using Api.Extensions;
 using Api.Services;
@@ -15,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,11 +30,11 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-
-    switch (builder.Configuration.GetValue<string>("DbProvider"))
+    string provider = builder.Configuration.GetValue<string>("DbProvider");
+    switch (provider)
     {
         case "Npgsql":
-            options.UseNpgsql(builder.Configuration.GetConnectionString("Npgsql"), config =>
+            options.UseNpgsql(builder.Configuration.GetConnectionString(provider), config =>
             {
                 config.MigrationsAssembly("PostgreSql");
             });
@@ -40,7 +42,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
             break;
         case "SqlServer":
         default:
-            options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer"), config =>
+            options.UseSqlServer(builder.Configuration.GetConnectionString(provider), config =>
             {
                 config.MigrationsAssembly("SqlServer");
             });
@@ -111,6 +113,30 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = false
         };
     });
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(SD.AdminPolicy, policy => policy.RequireRole(SD.AdminRole));
+    options.AddPolicy(SD.ManagerPolicy, policy => policy.RequireRole(SD.ManagerRole));
+    options.AddPolicy(SD.PlayerPolicy, policy => policy.RequireRole(SD.PlayerRole));
+    // Add other policies as needed
+    //Or
+    options.AddPolicy(SD.AdminOrManagerPolicy, policy => policy.RequireRole(SD.AdminRole,SD.ManagerRole));
+    //And
+    options.AddPolicy(SD.AdminAndManagerPolicy, policy => policy.RequireRole(SD.AdminRole).RequireRole(SD.ManagerRole));
+    //All
+    options.AddPolicy(SD.AllRolesPolicy, policy => policy.RequireRole(SD.AdminRole).RequireRole(SD.ManagerRole).RequireRole(SD.PlayerRole));
+
+    //email policy
+    options.AddPolicy(SD.AdminEmailPolicy, policy => policy.RequireClaim(ClaimTypes.Email, SD.AdminEmailAddress));
+    //paulson surname policy
+    options.AddPolicy(SD.PaulsonSurnamePolicy, policy => policy.RequireClaim(ClaimTypes.Surname, SD.PaulsonSurname));
+    //manager email and paulson surname policy
+    options.AddPolicy(SD.ManagerEmailAndPaulsonSurnamePolicy, policy => policy
+    .RequireClaim(ClaimTypes.Email, SD.ManagerEmailAddress)
+    .RequireClaim(ClaimTypes.Surname,SD.PaulsonSurname));
+
+    options.AddPolicy(SD.VipPolicy, policy => policy.RequireAssertion(context => SD.VIPPolicy(context)));
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Angular_Policy", builder =>

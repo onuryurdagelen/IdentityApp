@@ -8,6 +8,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Data\**" />
+	  <Content Remove="Data\**" />
+	  <EmbeddedResource Remove="Data\**" />
+	  <None Remove="Data\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<!--to authenticate user using JWT Bearer-->
 		<PackageReference Include="Mailjet.Api" Version="3.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.5" />
@@ -31,10 +38,6 @@
 	  <ProjectReference Include="..\IdentityApp.Data\IdentityApp.Data.csproj" />
 	  <ProjectReference Include="..\Migrations\PostgreSql\PostgreSql.csproj" />
 	  <ProjectReference Include="..\Migrations\SqlServer\SqlServer.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Data\" />
 	</ItemGroup>
 
 </Project>
