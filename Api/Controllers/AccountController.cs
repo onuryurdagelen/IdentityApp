@@ -59,12 +59,20 @@ namespace Api.Controllers
         {
             var user = await _userManager.FindByNameAsync(model.UserName);
             //if (user == null) return Unauthorized("Invalid username or password");
-            if (user == null) throw new AuthenticationErrorException("User Not Found!");
+            if (user == null) 
+                return Unauthorized("User Not Found!");
 
-            if (user.EmailConfirmed == false) throw new AuthenticationErrorException("Please confirm your email address.");
+            if (user.EmailConfirmed == false) 
+                return Unauthorized("Please confirm your email address.");
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
-            if (!result.Succeeded) throw new AuthenticationErrorException("Invalid username or password");
+
+            if (result.IsLockedOut)
+            {
+                return Unauthorized(string.Format("Your account has been locked.You should wait until {0} (UTC time) to be able to login", user.LockoutEnd));
+            }
+            if (!result.Succeeded) 
+                return Unauthorized("Invalid username or password");
 
             return await CreateApplicationUserDto(user);
         }

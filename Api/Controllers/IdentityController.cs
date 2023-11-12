@@ -13,7 +13,8 @@ namespace Api.Controllers
 
         protected string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier); //id of current user
 
-        protected bool IsAdministrator => User.IsInRole(SD.AdminRole);
+        protected bool IsAdmin => User.IsInRole(SD.AdminRole);
+        protected bool IsSuperAdmin => User.IsInRole(SD.SuperAdminRole);
 
 
     }

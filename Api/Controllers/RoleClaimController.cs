@@ -14,7 +14,14 @@ namespace Api.Controllers
             return Ok("public");
         }
         #region Roles
-        
+
+        [HttpGet("super-admin-role")]
+        [Authorize(Roles = SD.SuperAdminRole)]
+        public IActionResult SuperAdminRole()
+        {
+            return Ok("super-admin-role");
+        }
+
         [HttpGet("admin-role")]
         [Authorize(Roles = SD.AdminRole)]
         public IActionResult AdminRole()
@@ -53,6 +60,12 @@ namespace Api.Controllers
         #endregion
 
         #region Policy
+        [HttpGet("super-admin-policy")]
+        [Authorize(Policy = SD.SuperAdminPolicy)]
+        public IActionResult SuperAdminPolicy()
+        {
+            return Ok("super-admin-policy");
+        }
         [HttpGet("admin-policy")]
         [Authorize(Policy = SD.AdminPolicy)]  
         public IActionResult AdminPolicy()
