@@ -48,21 +48,26 @@ namespace Api.Controllers
             _emailService = emailService;
             _context = context;
         }
+        [HttpPost("refresh-token")]
+        public async Task<ActionResult<UserDto>> RefreshToken(RefreshTokenToSendDto model)
+        {
+            if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.Token))
+                return NotFound("Invalid token.Please try to login again.");
 
-        //[Authorize]
-        //[HttpPost("refresh-token")]
-        //public async Task<ActionResult<UserDto>> RefreshToken(string refreshToken)
-        //{
-        //    var token = Request.Cookies["IdentityAppRefreshToken"];
+            var fetchedRefreshToken = await _context.RefreshTokens.FirstOrDefaultAsync(x => x.UserId == model.UserId && x.Token == model.Token);
 
-        //    if (await IsValidRefreshTokenAsync(UserId, token))
-        //    {
-        //        var user = await _userManager.FindByIdAsync(UserId);
-        //        if (user == null) return Unauthorized("Invalid or expired token.Please try to login.");
+            if (fetchedRefreshToken == null)
+                return NotFound("Invalid token.Please try to login again.");
 
-        //        return await CreateApplicationUserDto(user);
-        //    }
-        //}
+            if (fetchedRefreshToken.IsExpired)
+                return NotFound("Your sessing has expired.Please login again.");
+
+            var existedUser = await _userManager.FindByIdAsync(model.UserId);
+
+            return await CreateApplicationUserDto(existedUser);
+
+           
+        }
         [Authorize]
         [HttpGet("refresh-page")]
         public async Task<ActionResult<UserDto>> RefreshPage()
@@ -262,11 +267,13 @@ namespace Api.Controllers
         #region Private Helper Methods
         private async Task<UserDto> CreateApplicationUserDto(User.User user)
         {
+           var createdRefreshToken =  await SaveRefreshTokenAsync(user);
+
             return new UserDto
             {
                 FirstName = user.FirstName,
                 LastName = user.LastName,
-                JWT = await _jwtService.CreateJWTAsync(user),
+                Token = await _jwtService.CreateJWTAsync(user, createdRefreshToken),
             };
         }
 
@@ -311,33 +318,41 @@ namespace Api.Controllers
 
         private bool IsUserAnAdmin(User.User user) => _userManager.GetRolesAsync(user).GetAwaiter().GetResult().ToArray().Any(x => x == SD.AdminRole);
 
-        private async Task SaveRefreshTokenAsync(User.User user)
+        private async Task<RefreshTokenDto> SaveRefreshTokenAsync(User.User user)
         {
-            var refreshToken = _jwtService.CreateRefreshToken(user);
-            var existingRefreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(rt => rt.UserId == refreshToken.UserId);
+            var createdRefreshToken = _jwtService.CreateRefreshToken(user);
+            var checkedRefreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(rt => rt.UserId == user.Id);
 
             //database'de ilgili kullanıcıya ait refresh token var ise oluşturduğumuz yeni refresh token ile değiştiriyoruz.
-            if(existingRefreshToken != null)
+            if(checkedRefreshToken != null)
             {
-                existingRefreshToken.Token = refreshToken.Token;
-                existingRefreshToken.DateCreatedUtc = refreshToken.DateCreatedUtc;
-                existingRefreshToken.DateExpiresUtc = refreshToken.DateExpiresUtc;
+                checkedRefreshToken.Token = createdRefreshToken.Token;
+                checkedRefreshToken.DateCreatedUtc = createdRefreshToken.DateCreated;
+                checkedRefreshToken.DateExpiresUtc = createdRefreshToken.ExpirationDate;
+
+                _context.RefreshTokens.Update(checkedRefreshToken);
+
             }
             //yoksa kullanıcıya ait refresh token ekliyoruz.
             else
             {
-                user.RefreshTokens.Add(refreshToken);
+                var refreshTokenId = Guid.NewGuid();
+                RefreshToken refreshToken = new RefreshToken 
+                { 
+                    Token = createdRefreshToken.Token,
+                    DateCreatedUtc = createdRefreshToken.DateCreated, 
+                    DateExpiresUtc = createdRefreshToken.ExpirationDate,
+                    UserId = user.Id,
+                    Id = refreshTokenId,
+                };
+                await _context.RefreshTokens.AddAsync(refreshToken);
+                user.RefreshTokenId = refreshTokenId;
+                _context.Users.Update(user);
             }
             await _context.SaveChangesAsync();
 
-            //cookie sadece server-side'da çalışacak.
-            var cookieOptions = new CookieOptions
-            {
-                Expires = refreshToken.DateExpiresUtc,
-                IsEssential = true,
-                HttpOnly = true
-            };
-            Response.Cookies.Append("IdentityAppRefreshToken", refreshToken.Token,cookieOptions);
+            return createdRefreshToken;
+
         }
         public async Task<bool> IsValidRefreshTokenAsync(string userId,string token)
         {
@@ -347,7 +362,7 @@ namespace Api.Controllers
 
             if (fetchedRefreshToken == null) return false;
 
-            if(!fetchedRefreshToken.IsExpired) return false;
+            if(fetchedRefreshToken.IsExpired) return false;
 
             return true;
         }

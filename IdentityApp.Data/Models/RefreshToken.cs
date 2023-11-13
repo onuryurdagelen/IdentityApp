@@ -25,7 +25,6 @@ namespace IdentityApp.Data.Models
 
         public DateTime DateExpiresUtc { get; set; }
 
-
         public bool IsExpired => DateTime.UtcNow >= DateExpiresUtc; //Token bitiş tarihi Bugünün tarihinden büyük ya da eşit ise süresi dolmuştur;değilse dolmamıştır.
 
         public bool IsActive => !IsActive;

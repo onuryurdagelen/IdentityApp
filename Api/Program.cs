@@ -112,7 +112,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             // don't validate audience (angular side)
             ValidateAudience = false,
             ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+            LifetimeValidator = (notBefore, expires,  securityToken, validationParameters) => expires.HasValue ? expires > DateTime.UtcNow : false
         };
     });
 builder.Services.AddAuthorization(options =>
