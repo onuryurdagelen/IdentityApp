@@ -125,7 +125,7 @@ namespace Api.Services
                     Email = "eslemYurdagelen@example.com"
                 };
                 await userManager.CreateAsync(manager, "Pa$$w0rd");
-                await userManager.AddToRolesAsync(manager, new[] { SD.ManagerRole });
+                await userManager.AddToRolesAsync(manager, new[] { SD.ManagerRole, SD.PlayerRole });
                 await userManager.AddClaimsAsync(manager, new Claim[]
                 {
                     new Claim(ClaimTypes.Email,manager.Email),
@@ -133,8 +133,8 @@ namespace Api.Services
                     new Claim(ClaimTypes.Surname,manager.LastName),
                 });
 
-                //vip player kullanıcısı
-                var player = new User
+                //player kullanıcısı
+                var manager2 = new User
                 {
                     FirstName = "Muhammed Ali",
                     LastName = "Yurdagelen",
@@ -142,16 +142,16 @@ namespace Api.Services
                     Email = "muhammedaliyurdagelen@example.com",
                     EmailConfirmed = true
                 };
-                await userManager.CreateAsync(player, "Pa$$w0rd");
-                await userManager.AddToRolesAsync(player, new[] { SD.PlayerRole });
-                await userManager.AddClaimsAsync(player, new Claim[]
+                await userManager.CreateAsync(manager2, "Pa$$w0rd");
+                await userManager.AddToRolesAsync(manager2, new[] { SD.ManagerRole, SD.PlayerRole });
+                await userManager.AddClaimsAsync(manager2, new Claim[]
                 {
-                    new Claim(ClaimTypes.Email,player.Email),
-                    new Claim(ClaimTypes.GivenName,player.FirstName),
-                    new Claim(ClaimTypes.Surname,player.LastName),
+                    new Claim(ClaimTypes.Email,manager2.Email),
+                    new Claim(ClaimTypes.GivenName,manager2.FirstName),
+                    new Claim(ClaimTypes.Surname,manager2.LastName),
                 });
 
-                //player kullanıcısı
+                //player kullanıcısı 2
                 var player2 = new User
                 {
                     FirstName = "Ahmet Zahit",

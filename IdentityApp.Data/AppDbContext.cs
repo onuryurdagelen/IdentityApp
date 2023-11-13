@@ -23,6 +23,6 @@ namespace IdentityApp.Data
             base.OnModelCreating(builder);
         }
 
-
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
     }
 }
