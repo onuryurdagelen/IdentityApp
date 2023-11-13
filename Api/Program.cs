@@ -115,6 +115,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization(options =>
 {
+    options.AddPolicy(SD.SuperAdminPolicy, policy => policy.RequireRole(SD.SuperAdminPolicy));
     options.AddPolicy(SD.AdminPolicy, policy => policy.RequireRole(SD.AdminRole));
     options.AddPolicy(SD.ManagerPolicy, policy => policy.RequireRole(SD.ManagerRole));
     options.AddPolicy(SD.PlayerPolicy, policy => policy.RequireRole(SD.PlayerRole));
