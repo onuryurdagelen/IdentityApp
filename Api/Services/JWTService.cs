@@ -1,4 +1,5 @@
-﻿using IdentityApp.Data.Models;
+﻿using Api.DTOs.Account;
+using IdentityApp.Data.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -7,6 +8,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -26,7 +28,7 @@ namespace Api.Services
             _jwtKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["JWT:Key"]));
             _userManager = userManager;
         }
-        public async Task<string> CreateJWTAsync(User user)
+        public async Task<TokenDto> CreateJWTAsync(User user,RefreshTokenDto refreshTokenDto)
         {
             var userClaims = new List<Claim>
             {
@@ -43,14 +45,36 @@ namespace Api.Services
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(userClaims),
-                Expires = DateTime.UtcNow.AddDays(int.Parse(_config["JWT:ExpiresInDays"])),
+                //Expires = DateTime.UtcNow.AddMinutes(int.Parse(_config["JWT:ExpiresInMinutes"])),
+                Expires = DateTime.UtcNow.AddMinutes(5),
+                //Expires = DateTime.UtcNow.AddSeconds(10),
                 SigningCredentials = creadentials,
                 Issuer = _config["JWT:Issuer"]
             };
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var jwt = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(jwt);
+            return new TokenDto
+            {
+                AccessToken = tokenHandler.WriteToken(jwt),
+                ExpirationTime = DateTime.UtcNow.AddMinutes(int.Parse(_config["JWT:ExpiresInMinutes"])),
+                RefreshToken = refreshTokenDto
+            };
+        }
+        public RefreshTokenDto CreateRefreshToken(User user)
+        {
+            byte[] token = new byte[32];
+            using var randomNumberGenerator = RandomNumberGenerator.Create();
+            randomNumberGenerator.GetBytes(token);
+
+            var refreshToken = new RefreshTokenDto
+            {
+                Token = Convert.ToBase64String(token),
+                UserId = user.Id,
+                DateCreated = DateTime.UtcNow,
+                ExpirationDate = DateTime.UtcNow.AddDays(int.Parse(_config["JWT:RefreshTokenExpiresInDays"])),
+            };
+            return refreshToken;
         }
     }
 }

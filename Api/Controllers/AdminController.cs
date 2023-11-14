@@ -1,4 +1,5 @@
-﻿using Api.DTOs.Admin;
+﻿using Api.Attributes;
+using Api.DTOs.Admin;
 using IdentityApp.Data.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -30,10 +31,9 @@ namespace Api.Controllers
         [HttpGet("get-members")]
         public async Task<ActionResult<IEnumerable<MemberViewDto>>> GetMembers()
         {
-            var members = userManager.Users
-                .AsEnumerable()
+            var members = await userManager.Users.ToListAsync();
                 //this is a protection
-                .Where( member => !IsUserAnAdmin(member))
+            var result = members.Where( member => !IsUserAnAdmin(member))
                 .Select( member => new MemberViewDto
                 {
                     Id = member.Id,
@@ -46,7 +46,7 @@ namespace Api.Controllers
                     
                 }).ToList();
 
-            return Ok(members);
+            return Ok(result);
         }
         [HttpPut("lock-member/{id}")]
         public async Task<IActionResult> LockMember(string id)
@@ -70,7 +70,11 @@ namespace Api.Controllers
             //Kullanıcı admin ise değişikliğe izin verilmeyecek.
             if (IsUserAnSuperAdmin(member)) return BadRequest(SD.SuperAdminChangeNotAllowed);
 
+            if(await userManager.GetAccessFailedCountAsync(member) > 0) 
+                member.AccessFailedCount = 0;
+            
             await userManager.SetLockoutEndDateAsync(member, null);
+            await userManager.UpdateAsync(member);
             return NoContent();
         }
 
@@ -101,25 +105,30 @@ namespace Api.Controllers
         public async Task<ActionResult<MemberAddEditDto>> GetMember(string id)
         {
             //kullanıcı türü admin değil ve ilgili id'ye eşit olan member'ı getirmeliyiz.
-            var member =  userManager.Users
-                .Where(member =>member.Id == id)
-                .AsEnumerable()
-                .Where(member => !IsUserAnAdmin(member))
+
+            var members = await userManager.Users.ToListAsync();
+
+            var member = members.Where(member => !IsUserAnAdmin(member) && member.Id == id)
                 .Select(member => new MemberAddEditDto
                 {
                     Id = member.Id,
                     FirstName = member.FirstName,
                     LastName = member.LastName,
                     UserName = member.UserName,
-                    Roles = userManager.GetRolesAsync(member).GetAwaiter().GetResult().ToList(),
-                }).FirstOrDefault();
+                    Roles = string.Join(",",userManager.GetRolesAsync(member).GetAwaiter().GetResult())
+                }).SingleOrDefault();
+
+            if (member == null) return NotFound("User not found!");
 
             return Ok(member);
         }
 
         [HttpPost("add-edit-member")]
+        [ServiceFilter(typeof(ValidationErrorResponseAttribute))]
         public async Task<IActionResult> AddEditMember(MemberAddEditDto model)
         {
+            User user;
+
             if(string.IsNullOrEmpty(model.Id))
             {
                 //adding a new member
@@ -128,12 +137,80 @@ namespace Api.Controllers
                     ModelState.AddModelError("errors", "Password must be at least 6 characters");
                     return BadRequest(ModelState);
                 }
+                //check if email address already used by other members
+                if(await userManager.Users.AnyAsync(x => x.Email == model.UserName.ToLower()))
+                 {
+                    return BadRequest($"An existing account is using {model.UserName}, email address. Please try with another email address");
+                }
+                user = new User
+                {
+                    FirstName = model.FirstName.ToLower(),
+                    LastName = model.LastName.ToLower(),
+                    UserName = model.UserName.ToLower(),
+                    Email = model.UserName.ToLower(),
+                    EmailConfirmed = true
+                };
+               var result =  await userManager.CreateAsync(user, model.Password);
+
+                if (!result.Succeeded) return BadRequest(result.Errors);
             }
             else
             {
                 //editing an existing member
+
+                if (!string.IsNullOrEmpty(model.Password))
+                {
+                    if (model.Password.Length < 6)
+                    {
+                        ModelState.AddModelError("errors", "Password must be at least 6 characters");
+                        return BadRequest(ModelState);
+                    }
+                }
+
+                user = await userManager.FindByIdAsync(model.Id);
+                if (user == null) return NotFound("User not found!");
+
+                if (IsUserAnSuperAdmin(user))
+                {
+                    return BadRequest(SD.SuperAdminChangeNotAllowed);
+                }
+
+                user.Email = model.UserName.ToLower();
+                user.UserName = model.UserName.ToLower();
+                user.FirstName = model.FirstName;
+                user.LastName = model.LastName;
+
+                if (!string.IsNullOrEmpty(model.Password))
+                {
+                    await userManager.RemovePasswordAsync(user);
+                    await userManager.AddPasswordAsync(user, model.Password);
+                }
+            
+                await userManager.UpdateAsync(user);
             }
-            return Ok();
+            // remove existing roles from user
+            var userRoles = await userManager.GetRolesAsync(user);
+            await userManager.RemoveFromRolesAsync(user, userRoles);
+
+            //add role to user
+            foreach (var role in model.Roles.Split(",").ToArray())
+            {
+                var roleToAdd = await roleManager.Roles.FirstOrDefaultAsync(r => r.Name == role.ToLower());
+                if (roleToAdd == null) return NotFound($"Invalid role name => {role}");
+
+                await userManager.AddToRoleAsync(user, role.ToLower());
+                
+            }
+            if(string.IsNullOrEmpty(model.Id))
+            {
+                return Ok(new JsonResult(new { title = "Member Created", message = $"{model.UserName} has been created" }));
+            }
+            else
+            {
+                return Ok(new JsonResult(new { title = "Member Edited", message = $"{model.UserName} has been edited" }));
+
+            }
+
         }
 
         private bool IsUserAnSuperAdmin(User user) => userManager.GetRolesAsync(user).GetAwaiter().GetResult().ToArray().Any(x => x == SD.SuperAdminRole);

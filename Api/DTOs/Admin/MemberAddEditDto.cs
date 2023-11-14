@@ -14,7 +14,8 @@ namespace Api.DTOs.Admin
         public string LastName { get; set; }
         public string Password { get; set; }
         [Required]
-        public IEnumerable<string> Roles { get; set; }
+        //eg: "SuperAdmin,Admin,Manager,Player,.."
+        public string Roles { get; set; }
 
 
     }
