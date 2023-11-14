@@ -60,13 +60,33 @@ namespace Api.Controllers
                 return NotFound("Invalid token.Please try to login again.");
 
             if (fetchedRefreshToken.IsExpired)
-                return NotFound("Your sessing has expired.Please login again.");
+                return BadRequest("Your sessing has expired.Please login again.");
 
             var existedUser = await _userManager.FindByIdAsync(model.UserId);
 
             return await CreateApplicationUserDto(existedUser);
 
-           
+        }
+
+        [Authorize]
+        [HttpPost("revoke")]
+        public async Task<IActionResult> Revoke(RevokeTokenDto model)
+        {
+            var refreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(p => p.Token == model.Token);
+            if (refreshToken == null)
+                return NotFound("User does not have this refresh token");
+
+            var user = await _userManager.FindByIdAsync(model.UserId);
+
+            if (user == null)
+                return NotFound(SD.UserNotFoundMessage);  
+
+            _context.RefreshTokens.Remove(refreshToken);
+            user.RefreshTokenId = null;
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return Ok();
         }
         [Authorize]
         [HttpGet("refresh-page")]
